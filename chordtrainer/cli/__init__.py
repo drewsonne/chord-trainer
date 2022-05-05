@@ -24,12 +24,21 @@ progress = ProgressTracker()
 quality_mapping = {"7": "dom_7", "m7": "min_7", "M7": "maj_7"}  # , "sus47": "sus4_7"}
 
 
-@click.command()
-@click.option("--no-debug/--debug", help="Debug", type=bool, default=True)
+@click.group()
+@click.option("--debug/--no-debug", help="Debug", type=bool, default=False)
+@click.pass_context
+def run(ctx, debug):
+    ctx.ensure_object(dict)
+    ctx.obj['DEBUG'] = debug
+
+
+@run.command('extended-harmonies')
 @click.option(
     "--quality", type=click.Choice(["7", "m7", "M7", "sus47"], case_sensitive=False)
 )
-def run(no_debug, quality):
+@click.pass_obj
+def extended_harmony_quiz(ctx, quality):
+    debug = ctx['DEBUG']
     chords = build_chord_reference()
 
     qualities = list(chords.keys())
@@ -40,7 +49,7 @@ def run(no_debug, quality):
         if (quality is not None) and (quality_mapping[quality] != chord_quality):
             continue
 
-        if not no_debug:
+        if debug:
             click.echo(
                 f"Adding '{len(chord_collection)}' chords in '{chord_quality}'..."
             )
@@ -48,7 +57,7 @@ def run(no_debug, quality):
 
         do_runtime_loop = True
         while do_runtime_loop:
-            if no_debug:
+            if not debug:
                 click.clear()
             progress.print_progress()
             if progress.is_ready_to_progress:
@@ -72,7 +81,7 @@ def run(no_debug, quality):
                 testing_chord.mark_correct()
                 sleep(1)
             else:
-                if no_debug:
+                if not debug:
                     click.clear()
                 progress.print_progress()
                 click.echo(
